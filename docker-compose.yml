@@ -22,7 +22,7 @@ services:
       - "--certificatesresolvers.myresolver.acme.dnschallenge.provider=digitalocean"
       - "--certificatesresolvers.myresolver.acme.dnschallenge.delaybeforecheck=0"
       #- "--certificatesresolvers.myresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
-      - "--certificatesresolvers.myresolver.acme.email=zwarthoffr@gmail.com"
+      - "--certificatesresolvers.myresolver.acme.email=$ACME_EMAIL"
       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
     networks:
       - t2_proxy
@@ -30,7 +30,7 @@ services:
       - "80:80"
       - "443:443"
     environment:
-          - "DO_AUTH_TOKEN=bb50c120568def901e7a3c8004d680b462401317723eb56593028204b738a759"
+          - "DO_AUTH_TOKEN=$DO_AUTH_TOKEN"
     volumes:
       - "./data/letsencrypt:/letsencrypt"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
