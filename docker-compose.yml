@@ -189,10 +189,16 @@ services:
       GITLAB_OMNIBUS_CONFIG: |
         external_url 'https://gitlab.$DOMAINNAME'
         nginx['listen_port'] = 80
+        nginx['listen_https'] = false
+        nginx['proxy_set_headers'] = {
+          "X-Forwarded-Proto" => "https",
+          "X-Forwarded-Ssl" => "on"
+        }
+
         gitlab_rails['gitlab_shell_ssh_port'] = 2222
     ports:
       - '8081:80'
-      - '2222:22'
+      - '2222:2222'
     volumes:
       - './data/gitlab/config:/etc/gitlab'
       - './data/gitlab/logs:/var/log/gitlab'
@@ -202,4 +208,5 @@ services:
       - "traefik.http.routers.gitlab.rule=Host(`gitlab.$DOMAINNAME`)"
       - "traefik.http.routers.gitlab.entrypoints=websecure"
       - "traefik.http.routers.gitlab.tls.certresolver=myresolver"
-      - "traefik.http.services.gitlab.loadbalancer.server.port=8081"
+      - "traefik.http.routers.gitlab.service=gitlab"
+      - "traefik.http.services.gitlab.loadbalancer.server.port=80"
