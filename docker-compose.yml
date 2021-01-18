@@ -46,7 +46,7 @@ services:
       - PGID=1004
       - VERSION=latest
       - UMASK_SET=022
-      - PLEX_CLAIM=claim-pC7GKDMzmQikzxS4tjYP
+      - PLEX_CLAIM=$PLEX_CLAIM
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
     volumes:
