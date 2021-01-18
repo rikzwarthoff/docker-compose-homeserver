@@ -1,0 +1,204 @@
+version: "3.8"
+
+networks:
+  t2_proxy:
+    external:
+      name: t2_proxy
+  default:
+    driver: bridge
+
+services:
+  traefik:
+    image: "traefik:v2.3"
+    container_name: "traefik"
+    command:
+      #- "--log.level=DEBUG"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.dnschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.dnschallenge.provider=digitalocean"
+      - "--certificatesresolvers.myresolver.acme.dnschallenge.delaybeforecheck=0"
+      #- "--certificatesresolvers.myresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
+      - "--certificatesresolvers.myresolver.acme.email=zwarthoffr@gmail.com"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    networks:
+      - t2_proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+          - "DO_AUTH_TOKEN=bb50c120568def901e7a3c8004d680b462401317723eb56593028204b738a759"
+    volumes:
+      - "./data/letsencrypt:/letsencrypt"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+
+  plex:
+    image: ghcr.io/linuxserver/plex
+    container_name: plex
+    runtime: nvidia
+    networks:
+      - t2_proxy
+    environment:
+      - PUID=994
+      - PGID=1004
+      - VERSION=latest
+      - UMASK_SET=022
+      - PLEX_CLAIM=claim-pC7GKDMzmQikzxS4tjYP
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    volumes:
+      - ./data/plex:/config
+      - /data/media/Movies:/movies
+      - /data/media/Series:/series
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.plex.rule=Host(`plex.$DOMAINNAME`)"
+      - "traefik.http.routers.plex.entrypoints=websecure"
+      - "traefik.http.routers.plex.tls.certresolver=myresolver"
+      - "traefik.http.services.plex.loadbalancer.server.port=32400"
+
+  radarr:
+    image: ghcr.io/linuxserver/radarr
+    container_name: radarr
+    networks:
+      - t2_proxy
+    environment:
+      - PUID=995
+      - PGID=1006
+      - TZ=Europe/Amsterdam
+      - UMASK_SET=022 #optional
+    volumes:
+      - ./data/radarr:/config
+      - /data/media/Movies:/movies
+      - /data/media/Downloads:/downloads
+    ports:
+      - 7878:7878
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.radarr.rule=Host(`radarr.$DOMAINNAME`)"
+      - "traefik.http.routers.radarr.entrypoints=websecure"
+      - "traefik.http.routers.radarr.tls.certresolver=myresolver"
+      - "traefik.http.services.radarr.loadbalancer.server.port=7878"
+
+  sonarr:
+    image: ghcr.io/linuxserver/sonarr
+    container_name: sonarr
+    networks:
+      - t2_proxy
+    environment:
+      - PUID=996
+      - PGID=1005
+      - TZ=Europe/Amsterdam
+      - UMASK_SET=022
+    volumes:
+      - ./data/sonarr:/config
+      - /data/media/Series:/series
+      - /data/media/Downloads:/downloads
+    ports:
+      - 8989:8989
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sonarr.rule=Host(`sonarr.$DOMAINNAME`)"
+      - "traefik.http.routers.sonarr.entrypoints=websecure"
+      - "traefik.http.routers.sonarr.tls.certresolver=myresolver"
+      - "traefik.http.services.sonarr.loadbalancer.server.port=8989"
+
+  transmission:
+    image: ghcr.io/linuxserver/transmission
+    container_name: transmission
+    networks:
+      - t2_proxy
+    environment:
+      - PUID=997
+      - PGID=1003
+      - TZ=Europe/Amsterdam
+      - TRANSMISSION_WEB_HOME=/combustion-release/
+    volumes:
+      - ./data/transmission:/config
+      - /data/media/Downloads/Transmission:/downloads
+    ports:
+      - 9091:9091
+      - 51413:51413
+      - 51413:51413/udp
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.transmission.rule=Host(`transmission.$DOMAINNAME`)"
+      - "traefik.http.routers.transmission.entrypoints=websecure"
+      - "traefik.http.routers.transmission.tls.certresolver=myresolver"
+      - "traefik.http.services.transmission.loadbalancer.server.port=9091"
+
+  jackett:
+    image: ghcr.io/linuxserver/jackett
+    container_name: jackett
+    networks:
+      - t2_proxy
+    environment:
+      - PUID=992
+      - PGID=992
+      - TZ=Europe/Amsterdam
+      - AUTO_UPDATE=true
+    volumes:
+      - ./data/jackett:/config
+    ports:
+      - 9117:9117
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jackett.rule=Host(`jackett.$DOMAINNAME`)"
+      - "traefik.http.routers.jackett.entrypoints=websecure"
+      - "traefik.http.routers.jackett.tls.certresolver=myresolver"
+      - "traefik.http.services.jackett.loadbalancer.server.port=9117"
+
+  sabnzbd:
+    image: ghcr.io/linuxserver/sabnzbd
+    container_name: sabnzbd
+    networks:
+      - t2_proxy
+    environment:
+      - PUID=993
+      - PGID=1007
+      - TZ=Europe/Amsterdam
+    volumes:
+      - /home/rik/.config/docker/sabnzbd/config:/config
+      - /data/media/Downloads/SABnzbd:/downloads
+    ports:
+      - 8080:8080
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sabnzbd.rule=Host(`sabnzbd.$DOMAINNAME`)"
+      - "traefik.http.routers.sabnzbd.entrypoints=websecure"
+      - "traefik.http.routers.sabnzbd.tls.certresolver=myresolver"
+      - "traefik.http.services.sabnzbd.loadbalancer.server.port=8080"
+
+  gitlab:
+    image: 'gitlab/gitlab-ee:latest'
+    container_name: gitlab
+    networks:
+      - t2_proxy
+    restart: unless-stopped
+    hostname: 'gitlab.$DOMAINNAME'
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'https://gitlab.$DOMAINNAME'
+        nginx['listen_port'] = 80
+    ports:
+      - '8081:80'
+      - '22:22'
+     volumes:
+      - './data/gitlab/config:/etc/gitlab'
+      - './data/gitlab/logs:/var/log/gitlab'
+      - './data/gitlab/data:/var/opt/gitlab'
+      labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gitlab.rule=Host(`gitlab.$DOMAINNAME`)"
+      - "traefik.http.routers.gitlab.entrypoints=websecure"
+      - "traefik.http.routers.gitlab.tls.certresolver=myresolver"
+      - "traefik.http.services.gitlab.loadbalancer.server.port=80"
