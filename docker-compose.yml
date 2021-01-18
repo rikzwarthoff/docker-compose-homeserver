@@ -179,7 +179,7 @@ services:
       - "traefik.http.services.sabnzbd.loadbalancer.server.port=8080"
 
   gitlab:
-    image: 'gitlab/gitlab-ee:latest'
+    image: gitlab/gitlab-ee:latest
     container_name: gitlab
     networks:
       - t2_proxy
@@ -192,11 +192,11 @@ services:
     ports:
       - '8081:80'
       - '22:22'
-     volumes:
+    volumes:
       - './data/gitlab/config:/etc/gitlab'
       - './data/gitlab/logs:/var/log/gitlab'
       - './data/gitlab/data:/var/opt/gitlab'
-      labels:
+    labels:
       - "traefik.enable=true"
       - "traefik.http.routers.gitlab.rule=Host(`gitlab.$DOMAINNAME`)"
       - "traefik.http.routers.gitlab.entrypoints=websecure"
