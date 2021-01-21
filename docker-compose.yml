@@ -197,7 +197,7 @@ services:
 
         gitlab_rails['gitlab_shell_ssh_port'] = 2222
     ports:
-      - '2222:2222'
+      - '2222:22'
     volumes:
       - './data/gitlab/config:/etc/gitlab'
       - './data/gitlab/logs:/var/log/gitlab'
