@@ -209,3 +209,8 @@ services:
       - "traefik.http.routers.gitlab.tls.certresolver=myresolver"
       - "traefik.http.routers.gitlab.service=gitlab"
       - "traefik.http.services.gitlab.loadbalancer.server.port=80"
+      - "traefik.http.routers.gitlab-registry.rule=Host(`gitlab-registry.$DOMAINNAME`)"
+      - "traefik.http.routers.gitlab-registry.tls.certresolver=le"
+      - "traefik.http.routers.gitlab-registry.entrypoints=websecure"
+      - "traefik.http.routers.gitlab-registry.service=gitlab-registry"
+      - "traefik.http.services.gitlab-registry.loadbalancer.server.port=5000"
