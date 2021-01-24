@@ -196,6 +196,13 @@ services:
         }
 
         gitlab_rails['gitlab_shell_ssh_port'] = 2222
+
+        registry_external_url 'https://gitlab-registry.$DOMAINNAME'
+        gitlab_rails['registry_enabled'] = true
+        gitlab_rails['api_url'] = 'https://gitlab-registry.$DOMAINNAME'
+        registry['enable'] = true
+        registry_nginx['enable'] = false
+        registry['registry_http_addr'] = "0.0.0.0:5000"
     ports:
       - '2222:22'
     volumes:
